@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js" integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg==" crossorigin=""></script>
+<div id="map-root"></div>
+<style type="text/css">
+body {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+#map-root {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+</style>
+<script>
+var features = [{
+    name: "Coloc du nord",
+    address: "177 chemin Lapujade",
+    latLng: [43.629795, 1.457324]
+  },
+  {
+    name: "Coloc du sud",
+    address: "51 rue st Roch",
+    latLng: [43.576115, 1.448914]
+  },
+  {
+    name: "Coloc de l'est",
+    address: "83 avenue Jean Chaubet",
+    latLng: [43.603098, 1.471701]
+  },
+  {
+    name: "Céline",
+    address: "41 rue Bachelier",
+    latLng: [43.607085, 1.451579]
+  },
+  {
+    name: "Charles",
+    address: "19 allées Paul Sabatier",
+    latLng: [43.597045, 1.455313]
+  },
+]
+
+features.forEach(feat => feat.latLng = L.latLng(feat.latLng))
+
+var middlePointCoords = features
+  .map(f => f.latLng)
+  .reduce(([accLat, accLng], { lat, lng }) => [accLat + lat, accLng + lng], [0, 0])
+  .map(coord => coord / features.length)
+var middlePoint = {
+  name: "Point moyen",
+  address: "Quelque part à Toulouse",
+  latLng: L.latLng(middlePointCoords[0], middlePointCoords[1])
+}
+var map = L.map('map-root').setView([0, 0], 2)
+var background = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}.{ext}', {
+  attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  subdomains: 'abcd',
+  minZoom: 0,
+  maxZoom: 20,
+  ext: 'png'
+})
+
+features.forEach(feat => {
+  feat.distance = feat.latLng.distanceTo(middlePoint.latLng)
+})
+middlePoint.distance = 0
+
+map.addLayer(background)
+
+function createFeatureMarker(feat, opts = {}) {
+  feat.marker = L.circleMarker(feat.latLng, opts)
+    .bindPopup(`
+      <p><b>${feat.name}</b></p>
+      <p>${feat.address}</p>
+      <p>${Math.round(feat.distance)}m</p>
+		`)
+    .addTo(map)
+  return feat.marker
+}
+features.forEach(createFeatureMarker)
+createFeatureMarker(middlePoint, { color: 'red' })
+map.fitBounds(L.featureGroup(features.map(f => f.marker)).getBounds(), {
+  padding: [50, 50],
+})
+</script>
